@@ -185,7 +185,7 @@ public class MessagePanel extends JPanel {
 	private void populateChatMessages() {		//String test = "Testing textMessage";
 		String test = "";
 		// Populate text area
-		for (Message m : currentChat.getMesssages())
+		for (Message m : currentChat.getMessages())
 			test = test + m.toString() + "\n";
 		
 		textMessages.setText(test);

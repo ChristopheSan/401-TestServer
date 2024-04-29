@@ -151,8 +151,8 @@ public class ClientGUI extends JFrame{
 				if (!e.getValueIsAdjusting()){
 					// This is where we will display the chatroom messages
 					// Goal: When a chatroom is selected, display the chatroom logged messages (Assume that correct logged messaging will be implemented)
-					   //ChatRoom selectedItem = (ChatRoom) chatrooms.getSelectedValue();
-					   //mssgPanel.setupChatroom(selectedItem);
+					   ChatRoom selectedItem = (ChatRoom) chatrooms.getSelectedValue();
+					   mssgPanel.setupChatroom(selectedItem);
 					   invokeNewPanel(mssgPanel);
 					// Need to mssgpanel.setupChatroom(selectedItem)
 					// then invoke new panel
@@ -163,7 +163,7 @@ public class ClientGUI extends JFrame{
 					
 					//JOptionPane that will show the chatroom selected's messages (logged messages);
 					//JOptionPane.showMessageDialog(null, "Chatroom selected: " + chatrooms.getSelectedValue());
-					displayLoggedMessages(chatrooms.getSelectedValue());
+					//displayLoggedMessages(chatrooms.getSelectedValue());
 					}
 				}
 			});
