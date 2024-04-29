@@ -1,3 +1,4 @@
+
 // Do we need anything else when sending a login request to the server?
 // This message should get processed by the server and success should be set
 // to `true` if the login in successful
@@ -9,6 +10,8 @@
 // The server can create a separate message to send this data
 // or we can add all of that data to this class
 
+import java.util.HashMap;
+import java.util.Map;
 
 public class LoginMessage extends ServerMessage{
     private String password;
@@ -16,17 +19,16 @@ public class LoginMessage extends ServerMessage{
     private boolean success;
 
     private User currentUser; // Server passes a user over when login is successful
-    // private List<User> allUsers; // Server should pass a list or map of ALL users 
+    private Map<String, String> allUsers; // Server should pass a list or map of ALL users 
     // a map of userIDs and names is probabably sufficient becauses we don't need all the data
 
-    private MessageTypes type;
+    //private MessageTypes type;
 
-    public LoginMessage(String pass, String user){
-        this.password = pass;
-        this.username = user;
-        this.type = MessageTypes.LOGIN;
-        this.success = false;
-        this.setStatus(MessageStatus.PENDING);
+    public LoginMessage(String password, String username) {
+        this.password = password;
+        this.username = username;
+        setType(MessageTypes.LOGIN);
+        setStatus(MessageStatus.PENDING);
     }
 
     public String getPassword(){
@@ -37,12 +39,12 @@ public class LoginMessage extends ServerMessage{
         return username;
     }
 
-    public MessageTypes getType(){
-        return type;
-    }
-
     public User getUser() {
         return currentUser;
+    }
+
+    public Map<String, String> getAllUsers() {
+        return allUsers;
     }
 
     public boolean isSuccessful(){
@@ -56,4 +58,8 @@ public class LoginMessage extends ServerMessage{
     public void setCurrentUser(User user) {
         this.currentUser = user;
     }
+    
+    public void setAllUsers(Map<String, String> allUsers){
+        this.allUsers = allUsers; 
+    }  
 }

@@ -3,6 +3,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 
 import java.awt.event.*;
+import java.io.IOException;
 
 public class LoginUI extends JFrame {
 	private JTextField usernameBox;
@@ -83,14 +84,15 @@ public class LoginUI extends JFrame {
 		String username = usernameBox.getText();
 		String password = new String(passwordBox.getPassword());
 		
-		//authentication here
 		// Create login message to send to server
 		LoginMessage request = new LoginMessage(password, username);
 
 		// pass to a new thread
-		new Thread(()->client.sendMessageToServer(request));
+		new Thread(()->{
+			client.sendMessageToServer(request);
+		}).start();
 
-		// 
+		// This UI is now in a waiting state 
 		
 		//Pseudocode
 		// if (user exists) then 
@@ -109,20 +111,51 @@ public class LoginUI extends JFrame {
 
 	// Call this method when a response message is received from the server
 	// This will allow the user to retry their login 
-	public void updateWaitingStatus(){
+	public void updateWaitingStatus(boolean connected){
 		if (awaitingServer) 
 			awaitingServer = false;
+		if (!connected) { // Attempt Unsuccessfull
+			// need to reset GUI
+
+			EventQueue.invokeLater(new Runnable() { 
+			public void run() {
+				try {
+				// Switch GUI into an accepting state again
+				passwordBox.setText("");
+				loginButton.setText("Login");
+				loginButton.setEnabled(true);
+				loginButton.setBackground(new Color(241,241,241));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		    });
+		}
 	}
 
 	public void clearPasswordBox() {
-		passwordBox.setText(""); 
+		 
 	}
 
 	// Private Methods
 	private void setWaiting() {
 		// Display waiting indicator 
-
+		EventQueue.invokeLater(new Runnable() { 
+			public void run() {
+				try {
+				// Switch GUI into a nonaccepting state 
+				//passwordBox.setText("");
+				loginButton.setText("Waiting...");
+				loginButton.setEnabled(false);
+				loginButton.setBackground(new Color(241,241,241));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		    });
+		
 		awaitingServer = true;
+		
 	}
 
 	//testing 

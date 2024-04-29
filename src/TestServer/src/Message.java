@@ -1,53 +1,83 @@
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.io.Serializable;
-import java.lang.annotation.ElementType;
+import java.util.*;
 
-public class Message implements Serializable {
-    protected final Type type;
-    protected Status status;
-    protected String text;
+// This is the Message that is contained within ChatRoom Class
+public class Message implements Serializable{
+	private String message;
+	private String sender;
+	private String chatID; //will handle multiple receivers, will contain chatroom ID
+	private LocalDateTime timestamp;
+	private String formattedTimestamp;
+	private String id;
 
-    public Message(){
-        this.type = Type.UNDEFINED;
-        this.status = Status.NOT_SERVICED;
-        this.text = "Undefined";
+	// Constructor for a brand new Message
+	public Message(String message, String sender, String chatID) {
+		this.message = message;
+		this.sender = sender;
+		this.chatID = chatID;
+		timestamp = LocalDateTime.now();
+		// this format is:
+		// 2024-04-27T16:41:49.080818
+	}
+	
+	//Load From File constructor	
+	public Message(String message, String sender, String chatid, LocalDateTime timestamp) {
+		this.message = message;
+		this.sender = sender;
+		this.chatID = chatid;
+		this.timestamp = timestamp;
+	}
+
+    //getters
+	public String getMessage() {
+		return message;
+	}
+	
+	public String getSender() {
+		return sender;
+	}
+	
+	public String getChatID() {
+		return chatID;
+	}
+	
+	public String getID() {
+		return id;
+	}
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 
-    public Message(Type type, Status status, String text){
-        this.type = type;
-        this.status = status;
-        this.text = text;
-    }
-    
-    //login/logout message
-    public Message(Type type) {
-	    this.type = type;
-	    this.status = Status.NOT_SERVICED;
-	    this.text = "";
-    }
+	//setters
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	
+	public void setSender(String sender) {
+		this.sender = sender;
+	}
+	
+	public void setChatID(String chatID){
+		this.chatID = chatID;
+	}
 
-//    private void setType(Type type){
-//    	this.type = type;
-//    }
+	public void setTimestamp(LocalDateTime timestamp) {
+        this.formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("MM/dd HH:mm"));
+    } 
 
-    public void setStatus(Status status){
-    	this.status = status;
+	//other methods
+	public String toStringForFile() {
+		return message + "," + sender + "," + chatID + "," + timestamp;
+	}
+
+	public String toString() {
+        //User sender = new User();
+        //sender.setUserName("Dummy Sender");
+		setTimestamp(timestamp);
+        //return "[" + formattedTimestamp + "] " + sender.getUsername() + ": " + message;
+		return "[" + formattedTimestamp + "] " + sender + ":\n " + message;
     }
-
-    public void setText(String text){
-    	this.text = text;
-    }
-
-    public Type getType(){
-    	return type;
-    }
-
-    public Status getStatus(){
-    	return status;
-    }
-
-    public String getText(){
-    	return text;
-    }
-    
-
 }

@@ -1,90 +1,156 @@
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClientHandler implements Runnable {
-	private final Socket client;
-	private Server server;
-	private boolean connected;
-	private boolean loggedIn;
-	
-	public ClientHandler(Socket socket, Server server) {
-		this.client = socket;
-		this.server = server;
-		connected = true;
-		loggedIn = false;
-	}
-	
-	@Override
-	public void run() {
-		try {
-			// to have access to the client's messages
-			InputStream input = client.getInputStream();
-			ObjectInputStream ois = new ObjectInputStream(input);
-			
-			// to have the ability to send the client objects
-			OutputStream outputStream = client.getOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(outputStream);
-			while (connected) {
-				
-				// check closed via client
-				// TODO CREATE A CHECK SO THAT WE DON'T GET EXCEPTIONS WHEN
-				// CLIENT CLOSES CONNECTION 
-				
-				List<ServerMessage> messages = (List<ServerMessage>) ois.readObject();
-				ServerMessage m = messages.get(0);
-				MessageTypes msgType = m.getType();
-				
-				// identify what to do
-				switch (msgType) {
-				case CHAT_MESSAGE:
-					if (loggedIn) {}
-						// server.handleTextMessage((LoginMessage) m);
-					else {
-						m.setStatus(MessageStatus.FAILED);
-					}
-					break;
-				case LOGIN:
-					server.handleLogin((LoginMessage) m); // this will modify the status after handling
-					if (m.getStatus() == MessageStatus.SUCCESS)
-						loggedIn = true;
-					break;
-				case LOGOUT:
-					server.handleLogout((LogoutMessage)m);
-					if (m.getStatus() == MessageStatus.SUCCESS) {
-						connected = false;
-						loggedIn = false;
-					}
-					break;
-				default:
-					System.out.println("Undefined message type");
-				}
-				
-				messages.removeAll(messages); 	// refresh messages to send back
-												// in this case we are only dealing with 1 message at a time
-				messages.add(m);
-				oos.writeObject(messages); // this should send the object back to the client -
-				oos.flush();
-				if(loggedIn == false && connected == false) { // do a check if logout was run
-					client.close();
-				}
-			}			
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		finally {
-			try {
-				System.out.println("Closing connection between client");
-				client.close();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-			server.decrementCurrentConnections();
-		}
-		
-	}
+    private final Socket clientSocket;
+    private final Server server;
+    private ObjectOutputStream outputStream;
+    private ObjectInputStream inputStream;
+
+    public ClientHandler(Socket clientSocket, Server server) {
+        this.clientSocket = clientSocket;
+        this.server = server;
+        
+        try {
+            this.outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+            this.inputStream = new ObjectInputStream(clientSocket.getInputStream());
+        } catch (IOException e) {
+            System.out.println("Error setting up stream: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+
+            while (true) {
+                List<ServerMessage> messages = (List<ServerMessage>) inputStream.readObject();
+                for (ServerMessage message : messages) {
+                     
+                    switch (message.getType()) {
+                        case LOGIN:
+                            server.handleLogin((LoginMessage) message, outputStream);
+                            sendMessageToClient(message);
+                            break; 
+                        case LOGOUT:
+                        	server.handleLogout((LogoutMessage) message);
+                            break;
+                        case CHAT_MESSAGE:
+                        	server.handleChatMessage((ChatMessage) message);
+                            //sendMessageToClient(message);
+                            break;
+                        case UPDATE_USER:
+                        	server.handleUpdateUser((UpdateUserMessage) message);
+                            break;
+                        case CREATE_CHAT:
+                        	server.handleCreateChat((CreateChatMessage) message);
+                            break;
+                        case ADD_USERS_TO_CHAT:
+                        	server.handleAddUsersToChat((AddUsersToChatMessage) message);
+                            break;
+                        case NOTIFY_USER:
+                        	server.handleNotifyUser((NotifyMessage) message);
+                            break;
+                        case PIN_CHAT:
+                        	server.handlePinChat((PinChatMessage) message);
+                            break;
+                        default:
+                            System.out.println("Received undefined message type.");
+                            break;
+                    }
+                }
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error reading from client: " + e.getMessage());
+        } 
+        finally {
+            closeConnection();
+           }
+        //     outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+        //     inputStream = new ObjectInputStream(clientSocket.getInputStream());
+
+        //     while (true) {
+
+        //     }
+        // } catch (IOException | ClassNotFoundException ex) {
+        //     ex.printStackTrace();
+        // }
+
+        
+    }
+
+    private void handleServerMessage(ServerMessage message) {
+//        if (message.getType() == null) {
+//            System.out.println("Received message with null type: " + message);
+//            return;
+//        }
+
+        System.out.println("Received message type: " + message.getType());
+        MessageTypes type = message.getType();
+
+        switch (type) {
+            case LOGIN:
+                //System.out.println("Login message received: " + message.getMessage());
+                //handleLoginMessage((LoginMessage) message);
+                break;
+            case CHAT_MESSAGE:
+            if (message instanceof ChatMessage) {
+                ChatMessage chatMessage = (ChatMessage) message;
+                System.out.println("Chat message received " + chatMessage.getMessage());
+                server.broadcastMessage(chatMessage);
+            } else {
+                System.out.println("Message is not a ChatMessage instance.");
+            }
+            break;
+            default:
+                System.out.println("Unhandled message type: " + message.getType());
+        }
+        
+    }
+
+    private void closeConnection() {
+    	try {
+    		if (inputStream != null) inputStream.close();
+    		if (outputStream != null) outputStream.close();
+    		if (clientSocket != null) clientSocket.close();
+    	} catch (IOException e) {
+    		System.out.println("Error closing connection: " + e.getMessage());
+            }
+            
+    	}
+
+//     private void handleLoginMessage(LoginMessage msg) {
+//         // Verify the username and password
+// //        if ("amiller2".equals(msg.getUsername()) && "test".equals(msg.getPassword())) {
+// //            msg.setSuccess(true);
+// //            System.out.println("Login successful for: " + msg.getUsername());
+// //        } else {
+// //            msg.setSuccess(false);
+// //            System.out.println("Login failed for: " + msg.getUsername());
+// //        }
+
+//     }
+
+    // For chat messages
+    public void handleChatMessage(ChatMessage chatMessage) {
+
+        // Send the message to all clients
+        server.broadcastMessage((ServerMessage) chatMessage);
+        sendMessageToClient(chatMessage);
+    }
+
+    private void sendMessageToClient(ServerMessage message) {
+        try {
+        	List<ServerMessage> toClient = new ArrayList<>();
+        	toClient.add(message);
+            outputStream.writeObject(toClient);
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
